@@ -24,81 +24,23 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ruei|x64'">
-    <OutputPath>bin\x64\Ruei\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>12.0</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>RUEI</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Ruei-Pmer|x64'">
-    <OutputPath>bin\x64\Ruei-Pmer\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>12.0</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>RUEI;PMER</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Hsm|x64'">
-    <OutputPath>bin\x64\Hsm\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>12.0</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>HSM</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Hsm-Pmer|x64'">
-    <OutputPath>bin\x64\Hsm-Pmer\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>12.0</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>HSM;PMER</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AbosulteCustomItems">
+      <HintPath>..\..\Sierra\PluginSCPSL\PluginSCPSL\bin\Debug\net481\AbosulteCustomItems.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <Private>false</Private>
       <HintPath>$(EXILED_REFERENCES)\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="HintServiceMeow-Exiled, Version=5.4.1.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <Private>false</Private>
-      <HintPath>$(EXILED_REFERENCES)\HintServiceMeow-Exiled.dll</HintPath>
-    </Reference>
     <Reference Include="Mirror-publicized">
-      <HintPath>$(EXILED_REFERENCES)\Mirror-publicized.dll</HintPath>
+      <HintPath>$(LTSL_REFS)\Mirror-publicized.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Pooling, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <Private>false</Private>
       <HintPath>$(EXILED_REFERENCES)\Pooling.dll</HintPath>
-    </Reference>
-    <Reference Include="ProjectMER">
-      <Private>false</Private>
-      <HintPath>$(EXILED_REFERENCES)\ProjectMER.dll</HintPath>
-    </Reference>
-    <Reference Include="RueI">
-      <Private>false</Private>
-      <HintPath>$(EXILED_REFERENCES)\RueI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -126,7 +68,6 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="ProjectSCRAMBLE.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Configs\Translation.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ExMod.Exiled">

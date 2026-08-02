@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using AbosulteCustomItems.API.Features.BaseItemFolder;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 
@@ -69,7 +69,7 @@ namespace ProjectSCRAMBLE
         {
             if (DirtyPlayers.Contains(ev.Player))
             {
-                SCRAMBLE.DeObfuscateScp96s(ev.Player);
+                BaseItem.GetOriginalDefinition<ProjectSCRAMBLE>()?.DeObfuscateScp96s(ev.Player);
                 DirtyPlayers.Remove(ev.Player);
             }
 
@@ -87,15 +87,15 @@ namespace ProjectSCRAMBLE
 
         private void OnChangingSpectatedPlayer(ChangingSpectatedPlayerEventArgs ev)
         {
-            if (ev.OldTarget != null && SCRAMBLE.ActiveScramblePlayers.Contains(ev.OldTarget))
+            if (ev.OldTarget != null && ProjectSCRAMBLE.ActiveScramblePlayers.Contains(ev.OldTarget))
             {
-                SCRAMBLE.DeObfuscateScp96s(ev.Player);
+                BaseItem.GetOriginalDefinition<ProjectSCRAMBLE>()?.DeObfuscateScp96s(ev.Player);
                 DirtyPlayers.Remove(ev.Player);
             }
 
-            if (ev.NewTarget != null && SCRAMBLE.ActiveScramblePlayers.Contains(ev.NewTarget))
+            if (ev.NewTarget != null && ProjectSCRAMBLE.ActiveScramblePlayers.Contains(ev.NewTarget))
             {
-                SCRAMBLE.ObfuscateScp96s(ev.Player);
+                BaseItem.GetOriginalDefinition<ProjectSCRAMBLE>()?.ObfuscateScp96s(ev.Player);
                 DirtyPlayers.Add(ev.Player);
             }
         }

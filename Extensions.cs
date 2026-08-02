@@ -28,48 +28,9 @@ namespace ProjectSCRAMBLE.Extensions
 {
     public static class Extensions
     {
-#if RUEI
-        private static readonly Tag scrambleHintTag = new("ProjectScramble");
-#elif HSM
-        private static readonly string hsmID = "SCRAMBLE";
-#endif
 
         internal static void AddSCRAMBLEHint(this Player player, string text)
         {
-#if RUEI
-            RueDisplay.Get(player).Show(scrambleHintTag, new BasicElement(Plugin.Instance.Config.Hint.YCordinate, text));
-#elif HSM
-            PlayerDisplay pd = player.GetPlayerDisplay();
-
-            if (pd.GetHint(hsmID) != null)
-            {
-                pd.GetHint(hsmID).Text = text;
-                return;
-            }
-
-            HintServiceMeow.Core.Models.Hints.Hint newHint = new()
-            {
-                Id = hsmID,
-                YCoordinate = Plugin.Instance.Config.Hint.YCordinate,
-                XCoordinate = Plugin.Instance.Config.Hint.XCordinate,
-                FontSize = Plugin.Instance.Config.Hint.FontSize,
-                Alignment = (HintServiceMeow.Core.Enum.HintAlignment)Plugin.Instance.Config.Hint.Alligment,
-                Text = text
-            };
-
-            pd.AddHint(newHint);
-#endif
-        }
-
-        internal static void RemoveSCRAMBLEHint(this Player player)
-        {
-#if RUEI
-            RueDisplay.Get(player).Remove(scrambleHintTag);
-#elif HSM
-            PlayerDisplay pd = player.GetPlayerDisplay();
-            if (pd.GetHint(hsmID) != null)
-                pd.RemoveHint(hsmID);
-#endif
         }
 
         internal static bool TryGetScp96Head(this Player player, out Transform headTransform)
@@ -95,12 +56,10 @@ namespace ProjectSCRAMBLE.Extensions
             }
 
             NetworkServer.SendSpawnMessage(identity, player.Connection);
-#if PMER
             foreach (NetworkIdentity netIdentity in networkedObject.GetComponentsInChildren<NetworkIdentity>(true))
             {
                 NetworkServer.SendSpawnMessage(netIdentity, player.Connection);
             }
-#endif
         }
 
         internal static void HideNetworkObject(this Player player, GameObject networkedObject)

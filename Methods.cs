@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using AbosulteCustomItems.API.Features.BaseItemFolder;
 using AdminToys;
 
 using Exiled.API.Features;
@@ -45,26 +45,7 @@ namespace ProjectSCRAMBLE
             if (Scp96Censors.ContainsKey(player))
                 RemoveCensor(player);
 
-            Config config = Plugin.Instance.Config;
-#if PMER
-            if (!ObjectSpawner.TrySpawnSchematic(config.CensorSchematic, head.position, head.rotation, 
-                config.CensorScale , out SchematicObject Censor))
-            {
-                Log.Error("Censor Schematic failed to spawn");
-                return;
-            }
-
-            Censor.transform.SetParent(player.Transform, true);
-
-            if (config.AttachCensorToHead && !Coroutines.ContainsKey(player))
-                Coroutines[player] = [];
-
-            if (config.AttachCensorToHead)
-                Coroutines[player].Add(Timing.RunCoroutine(TrackHead(Censor.transform, head, config.AttachToHeadsyncInterval)));
-
-            Scp96Censors.Add(player, Censor.gameObject);
-            HideForUnGlassesPlayer(Censor.gameObject);
-#else
+            var config = BaseItem.GetOriginalDefinition<ProjectSCRAMBLE>()!;
 
             Primitive Censor = Primitive.Create(primitiveType: config.CensorType, flags: PrimitiveFlags.Visible, position: head.position,
                 rotation: head.rotation.eulerAngles, scale: config.CensorScale, spawn: true, color: config.CensorColor);
@@ -83,7 +64,6 @@ namespace ProjectSCRAMBLE
 
             Scp96Censors.Add(player, Censor.GameObject);
             HideForUnGlassesPlayer(Censor.GameObject);
-#endif
         }
 
         internal static void RemoveCensor(Player player)
@@ -104,7 +84,7 @@ namespace ProjectSCRAMBLE
 
         private static void HideForUnGlassesPlayer(GameObject gameObject)
         {
-            HashSet<Player> activeScramblePlayers = ProjectSCRAMBLE.SCRAMBLE.ActiveScramblePlayers;
+            HashSet<Player> activeScramblePlayers = ProjectSCRAMBLE.ActiveScramblePlayers;
 
             foreach (Player ply in Player.List)
             {

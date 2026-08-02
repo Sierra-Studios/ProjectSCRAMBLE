@@ -1,5 +1,5 @@
 ﻿using System;
-
+using AbosulteCustomItems.API.Features.BaseItemFolder;
 using Exiled.API.Features;
 using Exiled.CustomItems.API;
 
@@ -7,7 +7,7 @@ using ProjectSCRAMBLE.Configs;
 
 namespace ProjectSCRAMBLE
 {
-    public class Plugin : Plugin<Config, Translation>
+    public class Plugin : Plugin<Config>
     {
         public static Plugin Instance { get; private set; }
 
@@ -27,17 +27,13 @@ namespace ProjectSCRAMBLE
         {
             Instance = this;
             EventHandlers = new EventHandlers();
-
-            Config.ProjectSCRAMBLE.Register();
-            EventHandlers.Subscribe();
-
+            BaseItem.RegisterAll(Assembly, null);
             base.OnEnabled();
         }
 
         public override void OnDisabled()
         {
-            Config.ProjectSCRAMBLE.Unregister();
-            EventHandlers.Unsubscribe();
+            BaseItem.UnregisterAll(Assembly);
 
             EventHandlers = null;
             Instance = null;

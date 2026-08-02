@@ -1,14 +1,22 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
-
+using AbosulteCustomItems.API.Events.EventArgs;
+using AbosulteCustomItems.API.Features;
+using AbosulteCustomItems.API.Features.BaseItemFolder;
+using AbosulteCustomItems.API.Features.BaseItemFolder.GenericDefinition;
+using AbosulteCustomItems.API.Features.Custom914;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Items;
 using Exiled.API.Features.Spawn;
 using Exiled.CustomItems.API.EventArgs;
 using Exiled.CustomItems.API.Features;
+using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Scp096;
-
+using Exiled.Events.EventArgs.Scp1344;
+using Exiled.Events.EventArgs.Scp914;
+using InventorySystem.Items.Usables.Scp1344;
 using MEC;
 
 using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.Wearables;
@@ -26,82 +34,120 @@ using Scp96Event = Exiled.Events.Handlers.Scp096;
 
 namespace ProjectSCRAMBLE
 {
-    public class ProjectSCRAMBLE : CustomGoggles
+    public class ScrambleShebang : Shebang
     {
-        internal static ProjectSCRAMBLE SCRAMBLE { get; private set; }
+        public float Charge { get; set; } = 100f;
+    }
+    
+    public class ProjectSCRAMBLE : BaseItem<ScrambleShebang>
+    {
+        //internal static ProjectSCRAMBLE<> SCRAMBLE { get; private set; }
 
         [YamlIgnore]
-        public HashSet<Player> ActiveScramblePlayers { get; } = [];
+        public static HashSet<Player> ActiveScramblePlayers { get; } = [];
 
-        [YamlIgnore]
-        public Dictionary<ushort, float> ScrambleCharges { get; } = [];
+        public override string Name { get; init; } = "Project SCRAMBLE";
+        public override int Id { get; init; } = 1730;
 
-        public override uint Id { get; set; } = 1730;
+        public override ItemType Type { get; init; } = ItemType.SCP1344;
+        public override float? Weight { get; init; } = 1;
 
-        public override float Weight { get; set; } = 1;
+        //Config values:
+        public float WearingTime { get; init; } = 1;
+        public float RemovingTime { get; init; } = 1;
+        [Description("Should there be a Random error in the artificial intelligence of the glasses?")]
+        public bool RandomError { get; init; } = false;
 
-        public override float WearingTime { get; set; } = 1;
+        [Description("Random error chance")]
+        public float RandomErrorChance { get; init; } = 0.001f;
 
-        public override float RemovingTime { get; set; } = 1;
+        [Description("Whether the SCRAMBLES will use charge while blocking SCP-096 face")]
+        public bool ScrambleCharge { get; init; } = true;
 
-        public override string Name { get; set; } = "Project SCRAMBLE";
+        [Description("How much power should the SCRAMBLEs use to obfuscate 96's face? (1 = default, >1 = faster, <1 = slower)")]
+        public float ChargeUsageMultiplayer { get; init; } = 1;
 
-        public override SpawnProperties SpawnProperties { get; set; } = new SpawnProperties();
+        [Description("Attach to head or Directly attach to player")]
+        public bool AttachCensorToHead { get; init; } = true;
 
-        public override string Description { get; set; } = "An artificial intelligence Visor that censors SCP-096's face";
+        [Description("0.1 is okey, 0.01 better/good , 0.001 greater")]
+        public float AttachToHeadsyncInterval { get; init; } = 0.01f;
+        
+        [Description("Censor type as primitive")]
+        public PrimitiveType CensorType { get; init; } = PrimitiveType.Cube;
 
-        public override void Init()
+        [Description("Rotate censor randomly")]
+        public bool CensorRotate { get; init; } = true;
+
+        [Description("Censor Color")]
+        public Color CensorColor { get; init; } = new Color(0, 0, 0, 1);
+
+        [Description("Censor scale")]
+        public Vector3 CensorScale { get; init; } = Vector3.one * 0.5f;
+        
+        public string Charge { get; init; } = "<color=green>Project SCRAMBLE ACTIVE charge status: {charge}</color>";
+        public string OffCharge { get; init; } = "<color=red>SCRAMBLE = !WARNING!! CHARGE-OFF</color>";
+        public string Error { get; init; } = "<color=red>SCRAMBLE = ?? !WARNING!! CRITICAL ERROR</color>";
+        public float HintTime { get; init; } = 5;
+        
+        protected override void OnRegistered(RegisteredEventArgs registeredEventArgs)
         {
-            base.Init();
-            SCRAMBLE = this;
-        }
-
-        public override void Destroy()
-        {
-            SCRAMBLE = null;
-            base.Destroy();
-        }
-
-        protected override void SubscribeEvents()
-        {
+            Exiled.Events.Handlers.Scp1344.ChangedStatus += OnChangedStatus;
+            Exiled.Events.Handlers.Scp1344.Deactivated += OnDeactivated;
+            Exiled.Events.Handlers.Scp914.UpgradingPickup += UpgradingPickup;
+            Exiled.Events.Handlers.Scp914.UpgradingInventoryItem += UpgradingInventoryItem;
             Scp96Event.AddingTarget += OnAddingTarget;
-            base.SubscribeEvents();
         }
 
-        protected override void UnsubscribeEvents()
+        protected override void OnUnregistered()
         {
+            Exiled.Events.Handlers.Scp1344.ChangedStatus -= OnChangedStatus;
+            Exiled.Events.Handlers.Scp1344.Deactivated -= OnDeactivated;
+            Exiled.Events.Handlers.Scp914.UpgradingPickup -= UpgradingPickup;
+            Exiled.Events.Handlers.Scp914.UpgradingInventoryItem -= UpgradingInventoryItem;
             Scp96Event.AddingTarget -= OnAddingTarget;
-            base.UnsubscribeEvents();
         }
 
-        protected override void OnWornGoggles(Player player, Scp1344 goggles)
+        public void OnChangedStatus(ChangedStatusEventArgs ev)
         {
-            Config config = Plugin.Instance.Config;
-
-            if (config.ScrambleCharge)
+            if (GetInstance(ev.Item)?.Template is not ProjectSCRAMBLE)
             {
-                ushort serial = goggles.Serial;
-
-                if (!ScrambleCharges.TryGetValue(serial, out float charge))
-                {
-                    charge = 100f;
-                    ScrambleCharges[serial] = charge;
-                    Log.Debug($"Initialized SCRAMBLE charge for serial {serial}.");
-                }
-
-                else if (charge <= 0f)
+                return;
+            }
+            
+            switch (ev.Scp1344Status)
+            {
+                case Scp1344Status.Activating:
+                    ev.Scp1344.Base._useTime = 5f - WearingTime;
+                    break;
+                case Scp1344Status.Active:
+                    OnActive(ev.Player, ev.Scp1344);
+                    break;
+                case Scp1344Status.Deactivating:
+                    ev.Scp1344.Base._useTime = 5.1f - RemovingTime;
+                    break;
+            }
+        }
+        
+        protected void OnActive(Player player, Scp1344 goggles)
+        {
+            ItemInstance instance = GetInstance(goggles.Serial);
+            ScrambleShebang shebang = (ScrambleShebang)instance!.Storage;
+            if (ScrambleCharge)
+            {
+                if (shebang.Charge <= 0f)
                 {
                     player.DisableEffect(EffectType.Scp1344);
-                    player.AddSCRAMBLEHint(Plugin.Instance.Translation.OffCharge);
+                    player.AddSCRAMBLEHint(GetOriginalDefinition<ProjectSCRAMBLE>()!.OffCharge);
                     player.ReferenceHub.EnableWearables(WearableElements.Scp1344Goggles);
                     Log.Debug($"{player.Nickname}: Tried to wear SCRAMBLE with no charge.");
                     return;
                 }
 
-                string hint = Plugin.Instance.Translation.Charge.Replace("{charge}", charge.FormatCharge());
-                player.AddSCRAMBLEHint(hint);
+                string hint = GetOriginalDefinition<ProjectSCRAMBLE>()!.Charge.Replace("{charge}", shebang.Charge.FormatCharge());
+                player.ShowHint(hint, GetOriginalDefinition<ProjectSCRAMBLE>()!.HintTime);
 
-                Log.Debug($"{player.Nickname}: SCRAMBLEs charge {charge}.");
+                Log.Debug($"{player.Nickname}: SCRAMBLEs charge {shebang.Charge}.");
             }
 
             ObfuscateScp96s(player);
@@ -115,11 +161,15 @@ namespace ProjectSCRAMBLE
 
             Log.Debug($"{player.Nickname}: Activated Project Scramble");
         }
+        
+        private void OnDeactivated(DeactivatedEventArgs ev)
+        {
+            RemoveFor(ev.Player);
+        }
 
-        protected override void OnRemovedGoggles(Player player, Scp1344 goggles)
+        public void RemoveFor(Player player)
         {
             DeObfuscateScp96s(player);
-            player.RemoveSCRAMBLEHint();
             ActiveScramblePlayers.Remove(player);
 
             foreach (Player ply in player.CurrentSpectatingPlayers)
@@ -131,50 +181,70 @@ namespace ProjectSCRAMBLE
             Log.Debug($"{player.Nickname} : Deactivated  Project Scramble");
         }
 
-        protected override void OnWaitingForPlayers()
+        protected override void OnItemRemoved(ItemInstance item, ScrambleShebang shebang, in ItemRemovedEventArgs ev)
         {
-            ScrambleCharges.Clear();
-            ActiveScramblePlayers.Clear();
-
-            base.OnWaitingForPlayers();
+            RemoveFor(item.OwnerManaged);
+            base.OnItemRemoved(item, shebang, in ev);
         }
 
-        protected override void OnUpgrading(UpgradingEventArgs ev)
+        protected override void OnTemplateRoundRestart()
         {
+            ActiveScramblePlayers.Clear();
+            base.OnTemplateRoundRestart();
+        }
+        
+
+        public void OnUpgrading(UpgradingEventArgs ev)
+        {
+           
+        }
+        
+        private void UpgradingPickup(UpgradingPickupEventArgs ev)
+        {
+            if (GetInstance(ev.Pickup)?.Storage is not ScrambleShebang scrambleShebang)
+            {
+                return;
+            }
+            
             switch(ev.KnobSetting)
             {
                 case Scp914.Scp914KnobSetting.Rough:
-                    ScrambleCharges[ev.Pickup.Serial] = 0f;
+                    scrambleShebang.Charge = 0f;
                     break;
 
                 case Scp914.Scp914KnobSetting.Coarse:
                     float charge = Random.Range(0, 50f);
-                    ScrambleCharges[ev.Pickup.Serial] = charge;
+                    scrambleShebang.Charge = charge;
                     break;
 
                 case Scp914.Scp914KnobSetting.Fine:
                 case Scp914.Scp914KnobSetting.VeryFine:
-                    ScrambleCharges[ev.Pickup.Serial] = 100f;
+                    scrambleShebang.Charge = 100f;
                     break;
             }
         }
 
-        protected override void OnUpgrading(UpgradingItemEventArgs ev)
+        private void UpgradingInventoryItem(UpgradingInventoryItemEventArgs ev)
         {
-            switch (ev.KnobSetting)
+            if (GetInstance(ev.Item)?.Storage is not ScrambleShebang scrambleShebang)
+            {
+                return;
+            }
+            
+            switch(ev.KnobSetting)
             {
                 case Scp914.Scp914KnobSetting.Rough:
-                    ScrambleCharges[ev.Item.Serial] = 0f;
+                    scrambleShebang.Charge = 0f;
                     break;
 
                 case Scp914.Scp914KnobSetting.Coarse:
                     float charge = Random.Range(0, 50f);
-                    ScrambleCharges[ev.Item.Serial] = charge;
+                    scrambleShebang.Charge = charge;
                     break;
 
                 case Scp914.Scp914KnobSetting.Fine:
                 case Scp914.Scp914KnobSetting.VeryFine:
-                    ScrambleCharges[ev.Item.Serial] = 100f;
+                    scrambleShebang.Charge = 100f;
                     break;
             }
         }
@@ -187,12 +257,11 @@ namespace ProjectSCRAMBLE
             if (!ActiveScramblePlayers.Contains(ev.Target))
                 return;
 
-            Config config = Plugin.Instance.Config;
-            Translation translation = Plugin.Instance.Translation;
+            var translation = BaseItem.GetOriginalDefinition<ProjectSCRAMBLE>()!;
 
-            bool shouldRandomError = config.RandomError && Random.Range(0f, 100f) <= config.RandomErrorChance;
+            bool shouldRandomError = RandomError && Random.Range(0f, 100f) <= RandomErrorChance;
 
-            if (!config.ScrambleCharge)
+            if (!ScrambleCharge)
             {
                 if (shouldRandomError)
                 {
@@ -204,60 +273,41 @@ namespace ProjectSCRAMBLE
                 return;
             }
 
-            ushort serial = 0;
 
-            var items = ev.Target.Inventory.UserInventory.Items.Keys;
-            foreach (ushort key in items)
+            var instance = ItemInstance.GetCustomInventory(ev.Player)
+                .FirstOrDefault(x => x.Template is ProjectSCRAMBLE);
+            var scramble = instance?.Template as ProjectSCRAMBLE;
+            var shebang = instance?.Storage as ScrambleShebang;
+            
+            if (scramble == null)
             {
-                if (TrackedSerials.Contains(key))
-                {
-                    serial = key;
-                    break;
-                }
-            }
-
-            if (serial == 0)
-            {
-                string playerSerials = string.Join(", ", items.Select(k => k.ToString()));
-                string trackedSerials = string.Join(", ", TrackedSerials.Select(s => s.ToString()));
                 Log.Debug
-                    ($"""
-                    [SCRAMBLE ERROR]
-                    Player: {ev.Target.Nickname} ({ev.Target.UserId})
-                    Reason: No matching SCRAMBLE serial found.
-                    Player Serial Keys: [{playerSerials}]
-                    Tracked Serial Keys: [{trackedSerials}]
-                    """);
+                ($"""
+                  [SCRAMBLE ERROR]
+                  Player: {ev.Target.Nickname} ({ev.Target.UserId})
+                  Reason: No matching SCRAMBLE serial found.
+                  """);
                 ev.IsAllowed = false;
                 return;
             }
-
-            if (!ScrambleCharges.TryGetValue(serial, out float charge))
-            {
-                charge = 100f;
-                ScrambleCharges[serial] = charge;
-                ev.Target.AddSCRAMBLEHint(translation.Charge.Replace("{charge}", charge.FormatCharge()));
-                ev.IsAllowed = false;
-                return;
-            }
-
-            if (charge <= 0f)
+            
+            if (shebang!.Charge <= 0f)
             {
                 ev.Target.AddSCRAMBLEHint(translation.OffCharge);
                 DeObfuscateScp96s(ev.Target);
                 return;
             }
 
-            SCRAMBLE.ScrambleCharges[serial] -= Time.deltaTime * config.ChargeUsageMultiplayer;
+            shebang.Charge -= Time.deltaTime * ChargeUsageMultiplayer;
 
             if (shouldRandomError)
             {
                 ev.Target.AddSCRAMBLEHint(translation.Error);
-                Timing.CallDelayed(0.5f, () => ev.Target.AddSCRAMBLEHint(translation.Charge.Replace("{charge}", charge.FormatCharge())));
+                Timing.CallDelayed(0.5f, () => ev.Target.AddSCRAMBLEHint(translation.Charge.Replace("{charge}", shebang.Charge.FormatCharge())));
                 return;
             }
 
-            ev.Target.AddSCRAMBLEHint(translation.Charge.Replace("{charge}", charge.FormatCharge()));
+            ev.Target.AddSCRAMBLEHint(translation.Charge.Replace("{charge}", shebang.Charge.FormatCharge()));
             ev.IsAllowed = false;
         }
 
